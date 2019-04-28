@@ -14,25 +14,28 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
-im = Image.open('YM.SU3.60.tiff')
+def Load_Img(Img_Path='YM.SU3.60.tiff'):
 
-im.show()
+  img = Image.open(Img_Path)
+  img.show()
+  return img
 
-img2=im.crop((70,90,184,230))
+def Crop_Img(Img, Dim_Tuple=(70,90,184,230)):
 
-imarray = np.array(img2)
+  cropped_img = Img.crop(Dim_Tuple)
+  imgarray = np.array(cropped_img)
 
-print(imarray.shape)
+  print(imgarray.shape)
+  print(imgarray)
 
-print(imarray)
+  return imgarray
 
-imgplot = plt.imshow(im)
-plt.show()
+def Display_Img(imgarray):
+  img = Image.fromarray(imgarray)
+  imgplot = plt.imshow(img)
+  plt.show()
 
-imgplot = plt.imshow(img2)
-plt.show()
-
-def mean(Img, i,j):
+def mean(Img, i,j, N):
 
   a=int((N-1)/2)
   u=0
@@ -41,13 +44,14 @@ def mean(Img, i,j):
   for k in range(-a,a):
     for h in range(-a,a):
       if((k+i)>0 and (k+i)<Img.shape[0] and (h+j)>0 and (h+j)<Img.shape[1]):
-        u=u+imarray[k+i][h+j]
+        u=u+Img[k+i][h+j]
         valid_cnt = valid_cnt + 1
 
   u=np.float128(u/(valid_cnt*valid_cnt))
   return u
 
-def st_dev(Img, i,j):
+def st_dev(Img, i,j, N):
+
   a=int((N-1)/2)
   sd=0
 
@@ -55,27 +59,45 @@ def st_dev(Img, i,j):
   for k in range(-a,a):
     for h in range(-a,a):
       if((k+i)>0 and (k+i)<Img.shape[0] and (h+j)>0 and (h+j)<Img.shape[1]):
-        m=mean(Img, i,j)
-        sd=sd+np.square(imarray[k+i][h+j]-m)
+        m=mean(Img, i,j, N)
+        sd=sd+np.square(Img[k+i][h+j]-m)
         valid_cnt = valid_cnt + 1
+
   sd=np.float128(sd/(valid_cnt*valid_cnt))
   sd=np.sqrt(sd)
+
   return sd
 
-def normalize(Img, i,j):
+def normalize(Img, N=11):
 
-  print("index",i,j)
-  m=mean(Img, i,j)
-  sd=st_dev(Img, i,j)
-  print("mean std",m, sd)
-  imarray[i][j]=np.float128((imarray[i][j]-m)/(6*sd))
+  Normalized_Img = np.zeros(Img.shape)
 
-N = 11
+  for i in range(0,Img.shape[0]):
+    for j in range(0,Img.shape[1]):
 
-for i in range(0,imarray.shape[0]):
-  for j in range(0,imarray.shape[1]):
-    normalize(imarray, i,j)
+      print("index",i,j)
+      m=mean(Img, i,j, N)
+      sd=st_dev(Img, i,j, N)
+      print("mean std",m, sd)
 
-img3 = Image.fromarray(imarray)
-imgplot = plt.imshow(img3)
+      Normalized_Img[i][j]=np.float128((Img[i][j]-m)/(6*sd))
+
+  return Normalized_Img
+
+Img = Load_Img('YM.SU3.60.tiff')
+
+imgplot = plt.imshow(Img)
 plt.show()
+
+Cropped_Img = Crop_Img(Img)
+Display_Img(Cropped_Img)
+
+Normalized_Img = normalize(Cropped_Img, 11)
+
+print("Normalized Image array: ", Normalized_Img)
+Display_Img(Normalized_Img)
+
+Feature_Detection_Img = normalize(Normalized_Img, 11)
+
+print("Features detected array: ", Feature_Detection_Img)
+Display_Img(Feature_Detection_Img)
