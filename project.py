@@ -26,7 +26,7 @@ def Load_TrainData(path):
     return train
 
 def Load_Img(Img_Path='YM.SU3.60.tiff'):
-  
+
   img = Image.open(Img_Path)
   img.show()
   return img
@@ -36,13 +36,13 @@ def Load_Img(Img_Path='YM.SU3.60.tiff'):
 
 
 def Crop_Img(Img, Dim_Tuple=(70,90,184,230)):
-  
+
   cropped_img = Img.crop(Dim_Tuple)
   imgarray = np.array(cropped_img)
 
   print(imgarray.shape)
   print(imgarray)
-  
+
   return imgarray
 
 
@@ -59,10 +59,10 @@ def Display_Img(imgarray):
 
 
 def mean(Img, i,j, N):
-  
+
   a=int((N-1)/2)
   u=0
-  
+
   valid_cnt = 0
   for k in range(-a,a):
     for h in range(-a,a):
@@ -78,10 +78,10 @@ def mean(Img, i,j, N):
 
 
 def st_dev(Img, i,j, N):
-  
+
   a=int((N-1)/2)
   sd=0
-    
+
   valid_cnt = 0
   for k in range(-a,a):
     for h in range(-a,a):
@@ -89,10 +89,10 @@ def st_dev(Img, i,j, N):
         m=mean(Img, i,j, N)
         sd=sd+np.square(Img[k+i][h+j]-m)
         valid_cnt = valid_cnt + 1
-        
+
   sd=np.float128(sd/(valid_cnt*valid_cnt))
   sd=np.sqrt(sd)
-  
+
   return sd
 
 
@@ -100,24 +100,46 @@ def st_dev(Img, i,j, N):
 
 
 def normalize(Img, N=11):
-  
+
   Normalized_Img = np.zeros(Img.shape)
-  
+
   for i in range(0,Img.shape[0]):
     for j in range(0,Img.shape[1]):
-    
+
       print("index",i,j)
-      m=mean(Img, i,j, N) 
+      m=mean(Img, i,j, N)
       sd=st_dev(Img, i,j, N)
       print("mean std",m, sd)
-      
+
       Normalized_Img[i][j]=np.float128((Img[i][j]-m)/(6*sd))
-      
+
   return Normalized_Img
 
 
 # In[91]:
+def Process_Train_Set(Train_DataSet, Normalisation_Window=11, FeatureDetection_Window=11):
 
+  # Assuming Train_Img_DataSet is dictioanry with Key is Image name and value is 2_D aaray with pixel values
+  Images_Data = {}
+
+  for Train_Img in Train_DataSet.keys():
+
+    # Load train image
+    Img = Load_Img(Train_Img)
+
+    # Crop the train image
+    Cropped_Img = Crop_Img(Img, (70,90,184,230))
+
+    # Normalize train image
+    Normalized_Img = normalize(Cropped_Img, Normalisation_Window)
+
+    # Extract image from normalized image
+    Feature_Detection_Img = normalize(Normalized_Img, FeatureDetection_Window)
+
+    # Store Feature_Detection_Img to an array of dimension Train_Set_len * No_Img_Rows * No_Img_Cols
+    Images_Data[Train_Img] = Feature_Detection_Img
+
+    return Images_Data
 
 DatasetPath = os.getcwd() + "/ml-face-jaffe-dataset-master/dataset"
 train = Load_TrainData(DatasetPath)
@@ -157,4 +179,3 @@ Feature_Detection_Img = normalize(Normalized_Img, 11)
 
 print("Features detected array: ", Feature_Detection_Img)
 Display_Img(Feature_Detection_Img)
-
