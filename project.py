@@ -141,6 +141,47 @@ def Process_Train_Set(Train_DataSet, Normalisation_Window=11, FeatureDetection_W
 
     return Images_Data
 
+def Min_Max_Classifer(Train_DataSet, Test_Image_Path, Normalisation_Window=11, FeatureDetection_Window=11, alpha=3):
+  
+  # Pre-process train images
+  Images_Data = Process_Train_Set(Train_DataSet, Normalisation_Window, FeatureDetection_Window)
+  
+  # Pre-Process Test Image Load -> Crop -> Normalize -> Feature Detection
+  Img = Load_Img(Test_Image_Path)
+  Cropped_Img = Crop_Img(Img, (70,90,184,230))
+  Normalized_Img = normalize(Cropped_Img, Normalisation_Window)
+  Feature_Detection_Img = normalize(Normalized_Img, FeatureDetection_Window)
+  
+  # Determine Min_Max Distance of test image from each train image
+  
+  Max_Similarity = 0
+  Label_Image = ""
+  
+  for Train_Img in Train_DataSet.keys():
+    
+    Train_Img_Data = Train_DataSet[Train_Img]
+    Test_Img_Data = Feature_Detection_Img
+    
+    # Calculate pixel wise minimum and maximum bet train and test image
+    Pixel_Min = np.minimum(Train_Img_Data, Test_Img_Data)
+    Pixel_Max = np.maximum(Train_Img_Data, Test_Img_Data)
+    
+    # Calculate pixel wise Min-Max Similarity
+    Min_Max_ratio = np.divide(Pixel_Min, Pixel_Max)
+    Min_Max_Sim = np.power(Min_Max_ratio, alpha)
+    
+    # Calculate total Min-Max Similarity
+    Total_Similarity = np.sum(Min_Max_Sim)
+    
+    # Update Most similar train image and its similarity with test image
+    if Total_Similarity > Max_Similarity:
+      Max_Similarity = Total_Similarity 
+      Label_Image = Train_Img
+      
+  # Extract emotion from image name
+  Emotion_Label = Extract_Img_Label(Label_Image)
+  return Emotion_Label
+
 DatasetPath = os.getcwd() + "/ml-face-jaffe-dataset-master/dataset"
 train = Load_TrainData(DatasetPath)
 
